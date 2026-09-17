@@ -143,11 +143,11 @@ private fun DashboardScreen(token: String, onLogout: () -> Unit) {
         Text(message)
         Spacer(Modifier.height(12.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(Modifier.weight(1f), onClick = { scope.launch { message = api("daily_bonus", emptyMap(), token).optString("message", ""); refresh() } }) { Text("پاداش روزانه") }
-            Button(Modifier.weight(1f), onClick = { scope.launch { message = api("stake_profit", emptyMap(), token).optString("message", ""); refresh() } }) { Text("سود روزانه") }
+            Button(modifier = Modifier.weight(1f), onClick = { scope.launch { message = api("daily_bonus", emptyMap(), token).optString("message", ""); refresh() } }) { Text("پاداش روزانه") }
+            Button(modifier = Modifier.weight(1f), onClick = { scope.launch { message = api("stake_profit", emptyMap(), token).optString("message", ""); refresh() } }) { Text("سود روزانه") }
         }
         Spacer(Modifier.height(8.dp))
-        Button(Modifier.fillMaxWidth(), onClick = {
+        Button(modifier = Modifier.fillMaxWidth(), onClick = {
             scope.launch {
                 val r = api("referral", emptyMap(), token)
                 referral = r.optString("link", "")
@@ -159,15 +159,15 @@ private fun DashboardScreen(token: String, onLogout: () -> Unit) {
         Text("کیف پول", style = MaterialTheme.typography.titleMedium)
         Text(if (wallet.isBlank() || wallet == "none") "ثبت نشده" else wallet)
         OutlinedTextField(walletInput, { walletInput = it }, Modifier.fillMaxWidth(), label = { Text("آدرس کیف پول") })
-        Button(Modifier.fillMaxWidth(), onClick = { scope.launch { message = api("set_wallet", mapOf("address" to walletInput), token).optString("message", ""); refresh() } }) { Text("ذخیره کیف پول") }
+        Button(modifier = Modifier.fillMaxWidth(), onClick = { scope.launch { message = api("set_wallet", mapOf("address" to walletInput), token).optString("message", ""); refresh() } }) { Text("ذخیره کیف پول") }
         Spacer(Modifier.height(16.dp))
         Text("تبدیل موجودی به سپرده", style = MaterialTheme.typography.titleMedium)
         OutlinedTextField(amount, { amount = it }, Modifier.fillMaxWidth(), label = { Text("مقدار TON") })
-        Button(Modifier.fillMaxWidth(), onClick = { scope.launch { message = api("convert", mapOf("amount" to amount), token).optString("message", ""); refresh() } }) { Text("تبدیل") }
+        Button(modifier = Modifier.fillMaxWidth(), onClick = { scope.launch { message = api("convert", mapOf("amount" to amount), token).optString("message", ""); refresh() } }) { Text("تبدیل") }
         Spacer(Modifier.height(16.dp))
         Text("صرافی", style = MaterialTheme.typography.titleMedium)
         OutlinedTextField(exchangeAmount, { exchangeAmount = it }, Modifier.fillMaxWidth(), label = { Text("مبلغ تومان") })
-        Button(Modifier.fillMaxWidth(), onClick = {
+        Button(modifier = Modifier.fillMaxWidth(), onClick = {
             scope.launch {
                 val r = api("exchange_start", mapOf("toman" to exchangeAmount), token)
                 if (r.optBoolean("ok")) exchangeRequest = r.optString("request_id") + "\nکارت مقصد: " + r.optString("recipient_card") + "\nمقدار: " + r.optString("coin")
@@ -176,7 +176,7 @@ private fun DashboardScreen(token: String, onLogout: () -> Unit) {
         }) { Text("ایجاد درخواست صرافی") }
         if (exchangeRequest.isNotBlank()) Text(exchangeRequest)
         Spacer(Modifier.height(20.dp))
-        OutlinedButton(Modifier.fillMaxWidth(), onClick = { scope.launch { api("logout", emptyMap(), token); onLogout() } }) { Text("خروج از حساب") }
+        OutlinedButton(modifier = Modifier.fillMaxWidth(), onClick = { scope.launch { api("logout", emptyMap(), token); onLogout() } }) { Text("خروج از حساب") }
     }
 }
 
@@ -188,7 +188,7 @@ private suspend fun api(action: String, values: Map<String, String>, token: Stri
         .apply { if (!token.isNullOrBlank()) addHeader("Authorization", "Bearer $token") }
         .build()
     try {
-        client.newCall(req).execute().use { response -> JSONObject(response.body?.string().orEmpty()) }
+        client.newCall(req).execute().use { JSONObject(it.body?.string().orEmpty()) }
     } catch (e: Exception) {
         JSONObject().put("ok", false).put("message", "خطا در ارتباط با سرور: ${e.message ?: "نامشخص"}")
     }
