@@ -3,6 +3,10 @@ package top.nexora.app
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -25,12 +29,30 @@ private const val API = "https://admintel.s14.telviprobot.top/bot/android_api_pr
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent { NexoraApp() }
+        setContent { NexoraApp(this) }
+    }
+
+    fun apiCall(action: String, data: JSONObject, done: (JSONObject?) -> Unit) {
+        lifecycleScope.launch {
+            val result = withContext(Dispatchers.IO) {
+                try {
+                    val payload = JSONObject(data.toString()).put("action", action)
+                    val body = payload.toString().toRequestBody("application/json".toMediaType())
+                    val req = Request.Builder().url(API).post(body).addHeader("Accept", "application/json").build()
+                    val res = OkHttpClient().newCall(req).execute()
+                    val text = res.body?.string() ?: "{\"ok\":false,\"message\":\"پاسخ خالی از سرور\"}"
+                    JSONObject(text)
+                } catch (_: Exception) {
+                    null
+                }
+            }
+            done(result)
+        }
     }
 }
 
 @Composable
-fun NexoraApp() {
+fun NexoraApp(activity: MainActivity) {
     var loggedIn by remember { mutableStateOf(false) }
     var phone by remember { mutableStateOf("") }
     var code by remember { mutableStateOf("") }
@@ -41,19 +63,13 @@ fun NexoraApp() {
 
     fun apiCall(action: String, data: JSONObject, done: (JSONObject?) -> Unit) {
         busy = true
-        Thread {
-            try {
-                val payload = JSONObject(data.toString()).put("action", action)
-                val body = payload.toString().toRequestBody("application/json".toMediaType())
-                val req = Request.Builder().url(API).post(body).addHeader("Accept", "application/json").build()
-                val res = OkHttpClient().newCall(req).execute()
-                val text = res.body?.string() ?: "{\"ok\":false,\"message\":\"پاسخ خالی از سرور\"}"
-                val obj = JSONObject(text)
-                runOnUiThread { busy = false; done(obj) }
-            } catch (_: Exception) {
-                runOnUiThread { busy = false; message = "ارتباط با سرور برقرار نشد."; done(null) }
-            }
-        }.start()
+        activity.apiCall(action, data) { result ->
+            busy = false
+            if (result == null) {
+                message = "ارتباط با سرور برقرار نشد."
+                done(null)
+            } else done(result)
+        }
     }
 
     MaterialTheme(colorScheme = darkColorScheme(primary = Color(0xFF18A5EE), background = Color(0xFF050B12), surface = Color(0xFF071321))) {
